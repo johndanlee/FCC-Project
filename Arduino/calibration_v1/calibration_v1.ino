@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <Adafruit_LIS3DH.h>
 #include <Adafruit_Sensor.h>
+#include <Math.h>
 
 // I2C
 Adafruit_LIS3DH lis = Adafruit_LIS3DH();
@@ -19,10 +20,12 @@ Adafruit_LiquidCrystal lcd(0);
 
 // for moving average
 int count = 0;
-int xarr[] = {0,0,0,0,0};
-int yarr[] = {0,0,0,0,0};
-int zarr[] = {0,0,0,0,0};
+int xarr[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int yarr[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int zarr[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
+
+uint8_t degree[8] = {0xc,0x12,0x12,0xc,0x0,0x0,0x0};
 
 
 void setup(void) {
@@ -42,7 +45,7 @@ void setup(void) {
   Serial.print("Range = "); Serial.print(2 << lis.getRange());
   Serial.println("G");
 
-  // lis.setDataRate(LIS3DH_DATARATE_50_HZ);
+  lis.setDataRate(LIS3DH_DATARATE_400_HZ);
   Serial.print("Data rate set to: ");
   switch (lis.getDataRate()) {
     case LIS3DH_DATARATE_1_HZ: Serial.println("1 Hz"); break;
@@ -55,7 +58,7 @@ void setup(void) {
 
     case LIS3DH_DATARATE_POWERDOWN: Serial.println("Powered Down"); break;
     case LIS3DH_DATARATE_LOWPOWER_5KHZ: Serial.println("5 Khz Low Power"); break;
-    case LIS3DH_DATARATE_LOWPOWER_1K6HZ: Serial.println("16 Khz Low Power"); break;
+    case LIS3DH_DATARATE_LOWPOWER_1K6HZ: Serial.println("16 Khz Low Power"); break;  
   }
 
 
@@ -71,7 +74,11 @@ void setup(void) {
   }
   Serial.println("Backpack init'd.");
 
-
+  // create custom character
+  lcd.createChar(0, degree);
+  // clear lcd
+  lcd.clear();
+  // write custom character
 
   lcd.setCursor(0, 0);
   lcd.print("Acceleration");
@@ -82,6 +89,8 @@ void setup(void) {
 
 
 }
+
+
 
 void loop() {
   lis.read();      // get X Y and Z data
@@ -95,56 +104,89 @@ void loop() {
     // for(int i = 0; i < 5; i++){Serial.print(zarr[i]); Serial.print(" ");}
     // Serial.println();
 
-
+// moving average of 15
   int i;
-  for(i = 0; i <= 3; i++){
+  for(i = 0; i <= 13; i++){
     xarr[i] = xarr[i + 1];
     yarr[i] = yarr[i + 1];
     zarr[i] = zarr[i + 1];
   }
 
 
-  xarr[4] = lis.x;
-  yarr[4] = lis.y;
-  zarr[4] = lis.z;
+  xarr[14] = lis.x;
+  yarr[14] = lis.y;
+  zarr[14] = lis.z;
 
 
   long sumx = 0;
   long sumy = 0;
   long sumz = 0;
-  for(i = 0; i < 5; i++){
+  for(i = 0; i <= 14; i++){
     sumx += xarr[i];
     sumy += yarr[i];
     sumz += zarr[i];
   }
   Serial.println();
 
-  long x = sumx/5;
-  long y = sumy/5;
-  long z = sumz/5;
+  long x = sumx/15;
+  long y = sumy/15;
+  long z = sumz/15;
+
+
+  // Apply offsets
+  x += 80;
+  y += 600;
   
-    Serial.print("X:  "); Serial.print(x);
-    Serial.print("  \tY:  "); Serial.print(y);
-    Serial.print("  \tZ:  "); Serial.print(x);
-    Serial.println();
+  // // Print averaged values
+  // Serial.print("X:  "); Serial.print(x);
+  // Serial.print("  \tY:  "); Serial.print(y);
+  // Serial.print("  \tZ:  "); Serial.print(z);
+  // Serial.println();
+
+  // Calculate angles (use int instead of double for now)
+  int rho = atan(x / sqrt(pow(y,2) + pow(z,2) )) * (180/PI);
+  int phi = atan(y / sqrt(pow(x,2) + pow(z,2) )) * (180/PI);
+  int theta = atan(sqrt(pow(x,2) + pow(y,2) ) / z) * (180/PI);
+
+    // Print angles
+  Serial.print("Rho:  "); Serial.print(rho);
+  Serial.print("  \tPhi:  "); Serial.print(phi);
+  Serial.print("  \tTheta:  "); Serial.print(theta);
+  Serial.println();
 
 
-  lcd.setCursor(15, 0);
-  lcd.print(count);
+
+
+
+
+  // lcd.setCursor(14, 0);
+  // lcd.print(count);
   count++;
-  if (count == 5){
+
+  // If you print too fast, the screen is unreadable
+  if (count == 15){
     lcd.setCursor(0, 1);
     lcd.print("                ");
-    lcd.setCursor(0, 1);
-    lcd.print(x/10);  // divide by 10 to truncate the least significant digit
-    lcd.setCursor(5, 1);
-    lcd.print(y/10);
-    lcd.setCursor(10, 1);
-    lcd.print(z/10);
 
+    // // Print averaged values on LCD
+    // lcd.setCursor(0, 1);
+    // lcd.print(x/10);  // divide by 10 to truncate the least significant digit
+    // lcd.setCursor(5, 1);
+    // lcd.print(y/10);
+    // lcd.setCursor(10, 1);
+    // lcd.print(z/10);
+
+    // Print angles on LCD
+    lcd.setCursor(0, 1);
+    lcd.print(rho); lcd.print((char)0); // divide by 10 to truncate the least significant digit
+    lcd.setCursor(5, 1);
+    lcd.print(phi); lcd.print((char)0);
+    lcd.setCursor(10, 1);
+    lcd.print(theta); lcd.print((char)0);
+    
     count = 0;
   }
 
 
-  delay(100);
+  delay(10);
 }
