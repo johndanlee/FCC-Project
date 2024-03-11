@@ -1,50 +1,50 @@
 
-// Basic demo for accelerometer readings from Adafruit LIS3DH
-
 #include <Wire.h>
 #include <Adafruit_LIS3DH.h>
 #include <Adafruit_Sensor.h>
 #include <Math.h>
 
-// I2C
+// Set up for I2C on accelerometer
 Adafruit_LIS3DH lis = Adafruit_LIS3DH();
 
-
-
-// include the library code:
+// include the library for the LCD
 #include "Adafruit_LiquidCrystal.h"
-
-// Connect via i2c, default address #0 (A0-A2 not jumpered)
+// Connect to LCD via i2c, default address #0 (A0-A2 not jumpered)
 Adafruit_LiquidCrystal lcd(0);
 
 
-// for moving average
+// for moving average later
 int count = 0;
-int xarr[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-int yarr[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-int zarr[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int xarr[15] = {0};
+int yarr[15] = {0};
+int zarr[15] = {0};
 
-
+// for drawing degree symbol on LCD later
 uint8_t degree[8] = {0xc,0x12,0x12,0xc,0x0,0x0,0x0};
 
 
+
 void setup(void) {
+  // 115200 baud rate
   Serial.begin(115200);
-  while (!Serial) delay(10);     // will pause Zero, Leonardo, etc until serial console opens
 
-  Serial.println("LIS3DH test!");
+  // pause until serial console opens
+  while (!Serial) delay(10);
 
-  if (! lis.begin(0x18)) {   // change this to 0x19 for alternative i2c address
+  // change this to 0x19 for alternative i2c address
+  if (! lis.begin(0x18)) {   
     Serial.println("Couldnt start");
     while (1) yield();
   }
   Serial.println("LIS3DH found!");
 
-  // lis.setRange(LIS3DH_RANGE_4_G);   // 2, 4, 8 or 16 G!
+  // range in Gs (2 means from -2G to 2G)
+  lis.setRange(LIS3DH_RANGE_2_G);   // 2, 4, 8 or 16 G
 
   Serial.print("Range = "); Serial.print(2 << lis.getRange());
   Serial.println("G");
 
+  // 400Hz datarate
   lis.setDataRate(LIS3DH_DATARATE_400_HZ);
   Serial.print("Data rate set to: ");
   switch (lis.getDataRate()) {
@@ -61,13 +61,7 @@ void setup(void) {
     case LIS3DH_DATARATE_LOWPOWER_1K6HZ: Serial.println("16 Khz Low Power"); break;  
   }
 
-
-
-
-
-
-
-  // set up the LCD's number of rows and columns:
+  // set up the LCD's number of rows and columns
   if (!lcd.begin(16, 2)) {
     Serial.println("Could not init backpack. Check wiring.");
     while(1);
@@ -78,16 +72,10 @@ void setup(void) {
   lcd.createChar(0, degree);
   // clear lcd
   lcd.clear();
-  // write custom character
 
+  // Print "Acceleration" in first row
   lcd.setCursor(0, 0);
   lcd.print("Acceleration");
-
-
-
-
-
-
 }
 
 
