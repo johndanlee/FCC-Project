@@ -19,8 +19,26 @@ int xarr[15] = {0};
 int yarr[15] = {0};
 int zarr[15] = {0};
 
-// for drawing degree symbol on LCD later
+
+// byte map for degree symbol
 uint8_t degree[8] = {0xc,0x12,0x12,0xc,0x0,0x0,0x0};
+
+
+
+// constants won't change. They're used here to set pin numbers:
+const int buttonPin = 2;  // the number of the pushbutton pin
+const int ledPin = 13;    // the number of the LED pin
+
+// variables will change:
+int buttonState = 0;  // variable for reading the pushbutton status
+
+
+
+
+// Offsets
+int x_offset = 0;
+int y_offset = 0;
+int z_offset = 0;
 
 
 
@@ -75,7 +93,16 @@ void setup(void) {
 
   // Print "Acceleration" in first row
   lcd.setCursor(0, 0);
-  lcd.print("Acceleration");
+  lcd.print("Angle in Degrees");
+
+
+
+  // initialize the LED pin as an output:
+  pinMode(ledPin, OUTPUT);
+  // initialize the pushbutton pin as an input:
+  pinMode(buttonPin, INPUT);
+
+
 }
 
 
@@ -92,7 +119,8 @@ void loop() {
     // for(int i = 0; i < 5; i++){Serial.print(zarr[i]); Serial.print(" ");}
     // Serial.println();
 
-// moving average of 15
+
+// shift first 14 elements of the array one index to the left
   int i;
   for(i = 0; i <= 13; i++){
     xarr[i] = xarr[i + 1];
@@ -100,12 +128,12 @@ void loop() {
     zarr[i] = zarr[i + 1];
   }
 
-
+  // update last element with the latest acceleration value
   xarr[14] = lis.x;
   yarr[14] = lis.y;
   zarr[14] = lis.z;
 
-
+  // sum all elements
   long sumx = 0;
   long sumy = 0;
   long sumz = 0;
@@ -114,32 +142,82 @@ void loop() {
     sumy += yarr[i];
     sumz += zarr[i];
   }
-  Serial.println();
 
+  // average = sum/15
   long x = sumx/15;
   long y = sumy/15;
   long z = sumz/15;
 
 
+
+
+
+
+
+
+  // BUTTON CODE
+  // read the state of the pushbutton value:
+  buttonState = digitalRead(buttonPin);
+  // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
+  if (buttonState == HIGH) {
+    delay(1000);
+    // turn LED on:
+    digitalWrite(ledPin, HIGH);
+    x_offset = 0 - x;
+    y_offset = 0 - y;
+    z_offset = 16384 - z;
+
+    lcd.setCursor(0, 0);
+    lcd.print("Calibrated!     ");
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
+    delay(1000);
+    lcd.setCursor(0, 0);
+    lcd.print("Angle in degrees");
+
+    // Print offsets
+    Serial.print("Xo:  "); Serial.print(x_offset);
+    Serial.print("  \tYo:  "); Serial.print(y_offset);
+    Serial.print("  \tZo:  "); Serial.print(z_offset);
+    Serial.println();
+  } else {
+    // turn LED off:
+    digitalWrite(ledPin, LOW);
+  }
+
+
+
+
+
+
+
+
   // Apply offsets
-  x += 80;
-  y += 600;
+  x += x_offset;
+  y += y_offset;
+  z += z_offset;
   
-  // // Print averaged values
-  // Serial.print("X:  "); Serial.print(x);
-  // Serial.print("  \tY:  "); Serial.print(y);
-  // Serial.print("  \tZ:  "); Serial.print(z);
-  // Serial.println();
+  // Print averaged values
+  Serial.print("X:  "); Serial.print(x);
+  Serial.print("  \tY:  "); Serial.print(y);
+  Serial.print("  \tZ:  "); Serial.print(z);
+  Serial.println();
 
   // Calculate angles (use int instead of double for now)
   int rho = atan(x / sqrt(pow(y,2) + pow(z,2) )) * (180/PI);
   int phi = atan(y / sqrt(pow(x,2) + pow(z,2) )) * (180/PI);
   int theta = atan(sqrt(pow(x,2) + pow(y,2) ) / z) * (180/PI);
 
-    // Print angles
-  Serial.print("Rho:  "); Serial.print(rho);
-  Serial.print("  \tPhi:  "); Serial.print(phi);
-  Serial.print("  \tTheta:  "); Serial.print(theta);
+  // // Print angles
+  // Serial.print("Rho:  "); Serial.print(rho);
+  // Serial.print("  \tPhi:  "); Serial.print(phi);
+  // Serial.print("  \tTheta:  "); Serial.print(theta);
+  // Serial.println();
+
+  // Print offsets
+  Serial.print("Xo:  "); Serial.print(x_offset);
+  Serial.print("  \tYo:  "); Serial.print(y_offset);
+  Serial.print("  \tZo:  "); Serial.print(z_offset);
   Serial.println();
 
 
@@ -176,5 +254,12 @@ void loop() {
   }
 
 
-  delay(10);
+
+
+
+
+
+
+
+  delay(15);
 }
