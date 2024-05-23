@@ -3,6 +3,7 @@
 #include <Adafruit_LIS3DH.h>
 #include <Adafruit_Sensor.h>
 #include <Math.h>
+#include "flight_tables.h"
 
 // Set up for I2C on accelerometer
 Adafruit_LIS3DH lis = Adafruit_LIS3DH();
@@ -91,9 +92,9 @@ void setup(void) {
   // clear lcd
   lcd.clear();
 
-  // Print "Acceleration" in first row
+  // Print first row
   lcd.setCursor(0, 0);
-  lcd.print("Angle in Degrees");
+  lcd.print("Mils       Range");
 
 
 
@@ -173,7 +174,7 @@ void loop() {
     lcd.print("                ");
     delay(1000);
     lcd.setCursor(0, 0);
-    lcd.print("Angle in degrees");
+    lcd.print("Mils       Range");
 
     // Print offsets
     Serial.print("Xo:  "); Serial.print(x_offset);
@@ -198,27 +199,28 @@ void loop() {
   z += z_offset;
   
   // Print averaged values
-  Serial.print("X:  "); Serial.print(x);
-  Serial.print("  \tY:  "); Serial.print(y);
-  Serial.print("  \tZ:  "); Serial.print(z);
-  Serial.println();
-
-  // Calculate angles (use int instead of double for now)
-  int rho = atan(x / sqrt(pow(y,2) + pow(z,2) )) * (180/PI);
-  int phi = atan(y / sqrt(pow(x,2) + pow(z,2) )) * (180/PI);
-  int theta = atan(sqrt(pow(x,2) + pow(y,2) ) / z) * (180/PI);
-
-  // // Print angles
-  // Serial.print("Rho:  "); Serial.print(rho);
-  // Serial.print("  \tPhi:  "); Serial.print(phi);
-  // Serial.print("  \tTheta:  "); Serial.print(theta);
+  // Serial.print("X:  "); Serial.print(x);
+  // Serial.print("  \tY:  "); Serial.print(y);
+  // Serial.print("  \tZ:  "); Serial.print(z);
   // Serial.println();
 
-  // Print offsets
-  Serial.print("Xo:  "); Serial.print(x_offset);
-  Serial.print("  \tYo:  "); Serial.print(y_offset);
-  Serial.print("  \tZo:  "); Serial.print(z_offset);
+  // Calculate angles (use int instead of float for now)
+  // divide by 1000 to get milliradians
+  float rho = atan(x / sqrt(pow(y,2) + pow(z,2) ))   *1000;
+  float phi = atan(y / sqrt(pow(x,2) + pow(z,2) ))   *1000;
+  float theta = atan(sqrt(pow(x,2) + pow(y,2) ) / z) *1000;
+
+  // // Print angles
+  Serial.print("Rho:  "); Serial.print(rho);
+  Serial.print("  \tPhi:  "); Serial.print(phi);
+  Serial.print("  \tTheta:  "); Serial.print(theta);
   Serial.println();
+
+  // Print offsets
+  // Serial.print("Xo:  "); Serial.print(x_offset);
+  // Serial.print("  \tYo:  "); Serial.print(y_offset);
+  // Serial.print("  \tZo:  "); Serial.print(z_offset);
+  // Serial.println();
 
 
 
@@ -231,6 +233,8 @@ void loop() {
 
   // If you print too fast, the screen is unreadable
   if (count == 15){
+    count = 0;
+
     lcd.setCursor(0, 1);
     lcd.print("                ");
 
@@ -244,13 +248,15 @@ void loop() {
 
     // Print angles on LCD
     lcd.setCursor(0, 1);
-    lcd.print(rho); lcd.print((char)0); // divide by 10 to truncate the least significant digit
-    lcd.setCursor(5, 1);
-    lcd.print(phi); lcd.print((char)0);
-    lcd.setCursor(10, 1);
-    lcd.print(theta); lcd.print((char)0);
+    lcd.print(round(rho));
+    // lcd.setCursor(5, 1);
+    // lcd.print(round(phi));
+    // lcd.setCursor(10, 1);
+    // lcd.print(round(theta));
     
-    count = 0;
+    // Print range on LCD
+    lcd.setCursor(10, 1);
+    lcd.print((int) calculate_range(rho)); lcd.print("m"); // cast to int to truncate decimal
   }
 
 
