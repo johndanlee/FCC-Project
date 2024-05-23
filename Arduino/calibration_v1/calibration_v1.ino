@@ -27,13 +27,15 @@ uint8_t degree[8] = {0xc,0x12,0x12,0xc,0x0,0x0,0x0};
 
 
 // constants won't change. They're used here to set pin numbers:
-const int buttonPin = 2;  // the number of the pushbutton pin
+const int configButtonPin = 2;  // the number of the configuration pushbutton pin
+const int selectButtonPin = 3;  // the number of the selector pushbutton pin
 const int ledPin = 13;    // the number of the LED pin
 
 // variables will change:
-int buttonState = 0;  // variable for reading the pushbutton status
-
-
+int configButtonState = 0;  // variable for reading the pushbutton status
+int selectButtonState = 0;
+unsigned int tableState = 0;         // use to track table state
+String tableStrings[4] = {"m430            ", "m385            ", "m918            ", "xm918           "};
 
 
 // Offsets
@@ -48,7 +50,7 @@ void setup(void) {
   Serial.begin(115200);
 
   // pause until serial console opens
-  while (!Serial) delay(10);
+  // while (!Serial) delay(10);
 
   // change this to 0x19 for alternative i2c address
   if (! lis.begin(0x18)) {   
@@ -100,25 +102,64 @@ void setup(void) {
 
   // initialize the LED pin as an output:
   pinMode(ledPin, OUTPUT);
-  // initialize the pushbutton pin as an input:
-  pinMode(buttonPin, INPUT);
-
+  // initialize the button pins as inputs:
+  pinMode(configButtonPin, INPUT);
+  pinMode(selectButtonPin, INPUT);
 
 }
 
 
 
 void loop() {
+
+  if (digitalRead(selectButtonPin) == HIGH) {
+    digitalWrite(ledPin, HIGH);
+    lcd.setCursor(0, 0);
+    lcd.print(tableStrings[tableState] + "          ");
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
+    delay(100);
+
+    unsigned int i = 0;
+    while(i < 130) {
+      // Serial.print(digitalRead(selectButtonPin)); Serial.print("   "); Serial.print(tableState); Serial.print("   "); Serial.println(tableStrings[tableState]);
+
+      if (digitalRead(selectButtonPin) == HIGH) {
+        if (tableState >= 3) {
+          tableState = 0;
+        } else {
+          tableState++;
+        }
+
+        lcd.setCursor(0, 0);
+        lcd.print(tableStrings[tableState] + "          ");
+        lcd.setCursor(0, 1);
+        lcd.print("                ");
+
+        i = 0;
+        delay(200);
+      }
+
+      i++;
+      delay(15);
+    }
+
+    digitalWrite(ledPin, LOW);
+    lcd.setCursor(0, 0);
+    lcd.print("Mils       Range");
+  }
+
+
   lis.read();      // get X Y and Z data
 
-    // // Check arrays
-    // Serial.print("Before copy: "); 
-    // for(int i = 0; i < 5; i++){Serial.print(xarr[i]); Serial.print(" ");}
-    // Serial.print("\t");
-    // for(int i = 0; i < 5; i++){Serial.print(yarr[i]); Serial.print(" ");}
-    // Serial.print("\t");
-    // for(int i = 0; i < 5; i++){Serial.print(zarr[i]); Serial.print(" ");}
-    // Serial.println();
+  // // Check arrays
+  // Serial.print("Before copy: "); 
+  // for(int i = 0; i < 5; i++){Serial.print(xarr[i]); Serial.print(" ");}
+  // Serial.print("\t");
+  // for(int i = 0; i < 5; i++){Serial.print(yarr[i]); Serial.print(" ");}
+  // Serial.print("\t");
+  // for(int i = 0; i < 5; i++){Serial.print(zarr[i]); Serial.print(" ");}
+  // Serial.println();
 
 
 // shift first 14 elements of the array one index to the left
@@ -158,9 +199,9 @@ void loop() {
 
   // BUTTON CODE
   // read the state of the pushbutton value:
-  buttonState = digitalRead(buttonPin);
+  configButtonState = digitalRead(configButtonPin);
   // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
-  if (buttonState == HIGH) {
+  if (configButtonState == HIGH) {
     delay(1000);
     // turn LED on:
     digitalWrite(ledPin, HIGH);
@@ -256,15 +297,8 @@ void loop() {
     
     // Print range on LCD
     lcd.setCursor(10, 1);
-    lcd.print((int) calculate_range(rho)); lcd.print("m"); // cast to int to truncate decimal
+    lcd.print((int) find_range(rho, tableState)); lcd.print("m"); // cast to int to truncate decimal
   }
-
-
-
-
-
-
-
 
 
   delay(15);
