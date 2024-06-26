@@ -43,7 +43,7 @@ void setup(void)
   // 115200 baud rate
   Serial.begin(115200);
 
-  // pause until serial console opens
+  // pause until serial console opens - use only when debugging with serial monitor
   // while (!Serial) delay(10);
 
   // change this to 0x19 for alternative i2c address
@@ -128,8 +128,10 @@ void setup(void)
 void loop()
 {
 
+  /* Menu for equipment table selection */
   if (digitalRead(selectButtonPin) == HIGH)
   {
+    // if the equipment selection button is pressed, wipe the screen
     digitalWrite(ledPin, HIGH);
     lcd.setCursor(0, 0);
     lcd.print(tableStrings[tableState] + "          ");
@@ -140,10 +142,10 @@ void loop()
     unsigned int i = 0;
     while (i < 130)
     {
-      // Serial.print(digitalRead(selectButtonPin)); Serial.print("   "); Serial.print(tableState); Serial.print("   "); Serial.println(tableStrings[tableState]);
-
+      // if the equipment selection button is pressed, cycle equipment on LCD
       if (digitalRead(selectButtonPin) == HIGH)
       {
+        // wraparound to first set of equipment when reaching end of menu
         if (tableState >= 3)
         {
           tableState = 0;
@@ -172,15 +174,6 @@ void loop()
   }
 
   lis.read(); // get X Y and Z data
-
-  // // Check arrays
-  // Serial.print("Before copy: ");
-  // for(int i = 0; i < 5; i++){Serial.print(xarr[i]); Serial.print(" ");}
-  // Serial.print("\t");
-  // for(int i = 0; i < 5; i++){Serial.print(yarr[i]); Serial.print(" ");}
-  // Serial.print("\t");
-  // for(int i = 0; i < 5; i++){Serial.print(zarr[i]); Serial.print(" ");}
-  // Serial.println();
 
   // shift first 14 elements of the array one index to the left
   int i;
@@ -212,7 +205,7 @@ void loop()
   long y = sumy / 15;
   long z = sumz / 15;
 
-  // BUTTON CODE
+  /* Calibration button */
   // read the state of the pushbutton value:
   configButtonState = digitalRead(configButtonPin);
   // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
@@ -253,6 +246,7 @@ void loop()
   y += y_offset;
   z += z_offset;
 
+  /* DEBUG */
   // Print averaged values
   // Serial.print("X:  "); Serial.print(x);
   // Serial.print("  \tY:  "); Serial.print(y);
@@ -274,6 +268,7 @@ void loop()
   Serial.print(theta);
   Serial.println();
 
+  /* DEBUG */
   // Print offsets
   // Serial.print("Xo:  "); Serial.print(x_offset);
   // Serial.print("  \tYo:  "); Serial.print(y_offset);
@@ -292,6 +287,7 @@ void loop()
     lcd.setCursor(0, 1);
     lcd.print("                ");
 
+    /* DEBUG */
     // // Print averaged values on LCD
     // lcd.setCursor(0, 1);
     // lcd.print(x/10);  // divide by 10 to truncate the least significant digit
@@ -303,10 +299,6 @@ void loop()
     // Print angles on LCD
     lcd.setCursor(0, 1);
     lcd.print(round(rho));
-    // lcd.setCursor(5, 1);
-    // lcd.print(round(phi));
-    // lcd.setCursor(10, 1);
-    // lcd.print(round(theta));
 
     // Print range on LCD
     lcd.setCursor(10, 1);
