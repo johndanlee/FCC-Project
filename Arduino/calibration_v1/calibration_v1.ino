@@ -24,7 +24,6 @@ int zarr[15] = {0};
 uint8_t degree[8] = {0xc,0x12,0x12,0xc,0x0,0x0,0x0};
 
 
-
 // constants won't change. They're used here to set pin numbers:
 const int buttonPin = 2;  // the number of the pushbutton pin
 const int ledPin = 13;    // the number of the LED pin
@@ -91,7 +90,7 @@ void setup(void) {
   // clear lcd
   lcd.clear();
 
-  // Print "Acceleration" in first row
+  // Print "Angle in degrees" in first row
   lcd.setCursor(0, 0);
   lcd.print("Angle in Degrees");
 
@@ -101,8 +100,6 @@ void setup(void) {
   pinMode(ledPin, OUTPUT);
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin, INPUT);
-
-
 }
 
 
